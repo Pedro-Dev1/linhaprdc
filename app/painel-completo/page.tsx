@@ -6,8 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-// Interfaces movidas para fora do componente
+interface Maquina {
+  id: string;
+  modelo: string;
+  serial: string;
+  fabricante: string;
+  status: 'disponível' | 'em_uso' | 'manutenção';
+  dataCadastro: string;
+}
+
 interface Tecnico {
   id: number
   nome: string
@@ -91,12 +100,17 @@ export default function PainelCompleto() {
   const [novoStatus, setNovoStatus] = useState('disponível')
 
   // Estado das máquinas
-  const [maquinas, setMaquinas] = useState<any[]>([])
-  const [maquinasProducao, setMaquinasProducao] = useState<any[]>([])
-  const [maquinasFinalizadas, setMaquinasFinalizadas] = useState<any[]>([])
+  const [maquinas, setMaquinas] = useState<Maquina[]>([])
+  const [maquinasProducao, setMaquinasProducao] = useState<Maquina[]>([])
+  const [maquinasFinalizadas, setMaquinasFinalizadas] = useState<Maquina[]>([])
 
   // Estado dos técnicos
   const tecnicos = INITIAL_TECNICOS; //Removed unnecessary state and destructuring
+
+  useEffect(() => {
+    // Aqui você pode adicionar qualquer lógica necessária que estava no useEffect anterior
+    // Por exemplo, carregar dados iniciais, configurar listeners, etc.
+  }, []);
 
   const handleLogin = (login: string, senha: string) => {
     const tecnico = tecnicos.find(t => t.login === login && t.senha === senha)
@@ -133,12 +147,12 @@ export default function PainelCompleto() {
       return
     }
 
-    const novaMaquina = {
+    const novaMaquina: Maquina = {
       id: String(Date.now()),
       modelo: novoModelo,
       serial: novoSerial,
       fabricante: novoFabricante,
-      status: novoStatus,
+      status: novoStatus as 'disponível' | 'em_uso' | 'manutenção',
       dataCadastro: new Date().toISOString(),
     }
 
@@ -148,6 +162,16 @@ export default function PainelCompleto() {
     setNovoFabricante('')
     setNovoStatus('disponível')
     setAlertMessage('Máquina adicionada com sucesso!')
+  }
+
+  const moverParaProducao = (maquina: Maquina) => {
+    setMaquinas(prev => prev.filter(m => m.id !== maquina.id));
+    setMaquinasProducao(prev => [...prev, { ...maquina, status: 'em_uso' }]);
+  }
+
+  const finalizarProducao = (maquina: Maquina) => {
+    setMaquinasProducao(prev => prev.filter(m => m.id !== maquina.id));
+    setMaquinasFinalizadas(prev => [...prev, { ...maquina, status: 'disponível' }]);
   }
 
   return (
@@ -220,13 +244,36 @@ export default function PainelCompleto() {
         <TabsContent value="producao">
           <Card>
             <CardHeader>
-              <CardTitle>Produção</CardTitle>
+              <CardTitle>Máquinas em Produção</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoggedIn ? (
-                <p>Conteúdo da seção de produção</p>
+              {maquinasProducao.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Modelo</TableHead>
+                      <TableHead>Serial</TableHead>
+                      <TableHead>Fabricante</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {maquinasProducao.map((maquina) => (
+                      <TableRow key={maquina.id}>
+                        <TableCell>{maquina.modelo}</TableCell>
+                        <TableCell>{maquina.serial}</TableCell>
+                        <TableCell>{maquina.fabricante}</TableCell>
+                        <TableCell>{maquina.status}</TableCell>
+                        <TableCell>
+                          <Button onClick={() => finalizarProducao(maquina)}>Finalizar Produção</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               ) : (
-                <p>Você precisa estar logado para acessar esta seção.</p>
+                <p>Não há máquinas em produção no momento.</p>
               )}
             </CardContent>
           </Card>
@@ -238,10 +285,29 @@ export default function PainelCompleto() {
               <CardTitle>Máquinas Concluídas</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoggedIn ? (
-                <p>Conteúdo da seção de máquinas concluídas</p>
+              {maquinasFinalizadas.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Modelo</TableHead>
+                      <TableHead>Serial</TableHead>
+                      <TableHead>Fabricante</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {maquinasFinalizadas.map((maquina) => (
+                      <TableRow key={maquina.id}>
+                        <TableCell>{maquina.modelo}</TableCell>
+                        <TableCell>{maquina.serial}</TableCell>
+                        <TableCell>{maquina.fabricante}</TableCell>
+                        <TableCell>{maquina.status}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               ) : (
-                <p>Você precisa estar logado para acessar esta seção.</p>
+                <p>Não há máquinas finalizadas no momento.</p>
               )}
             </CardContent>
           </Card>
@@ -262,6 +328,37 @@ export default function PainelCompleto() {
           </Card>
         </TabsContent>
       </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>Máquinas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Modelo</TableHead>
+                <TableHead>Serial</TableHead>
+                <TableHead>Fabricante</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {maquinas.map((maquina) => (
+                <TableRow key={maquina.id}>
+                  <TableCell>{maquina.modelo}</TableCell>
+                  <TableCell>{maquina.serial}</TableCell>
+                  <TableCell>{maquina.fabricante}</TableCell>
+                  <TableCell>{maquina.status}</TableCell>
+                  <TableCell>
+                    <Button onClick={() => moverParaProducao(maquina)}>Mover para Produção</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

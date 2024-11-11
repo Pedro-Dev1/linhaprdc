@@ -1,19 +1,27 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-// Interfaces movidas para fora do componente
 interface Tecnico {
   id: number
   nome: string
   login: string
   senha: string
   isMaster: boolean
+}
+
+interface Maquina {
+  id: string;
+  modelo: string;
+  serial: string;
+  fabricante: string;
+  status: string;
+  dataCadastro: string;
 }
 
 interface LoginComponentProps {
@@ -23,12 +31,12 @@ interface LoginComponentProps {
   onLogout: () => void
 }
 
-// Componente de Login separado
 const LoginComponent = ({ isLoggedIn, tecnicoLogado, onLogin, onLogout }: LoginComponentProps) => {
   const [loginTecnico, setLoginTecnico] = useState('')
   const [senhaTecnico, setSenhaTecnico] = useState('')
 
-  const handleLogin = () => {
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
     onLogin(loginTecnico, senhaTecnico)
     setLoginTecnico('')
     setSenhaTecnico('')
@@ -36,24 +44,26 @@ const LoginComponent = ({ isLoggedIn, tecnicoLogado, onLogin, onLogout }: LoginC
 
   if (!isLoggedIn) {
     return (
-      <div className="mb-4 p-4 bg-gray-100 rounded-lg">
-        <div className="flex items-center space-x-2">
-          <Input
-            placeholder="Login"
-            value={loginTecnico}
-            onChange={(e) => setLoginTecnico(e.target.value)}
-            className="w-32"
-          />
-          <Input
-            type="password"
-            placeholder="Senha"
-            value={senhaTecnico}
-            onChange={(e) => setSenhaTecnico(e.target.value)}
-            className="w-32"
-          />
-          <Button onClick={handleLogin}>Login</Button>
+      <form onSubmit={handleLogin}>
+        <div className="mb-4 p-4 bg-gray-100 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <Input
+              placeholder="Login"
+              value={loginTecnico}
+              onChange={(e) => setLoginTecnico(e.target.value)}
+              className="w-32"
+            />
+            <Input
+              type="password"
+              placeholder="Senha"
+              value={senhaTecnico}
+              onChange={(e) => setSenhaTecnico(e.target.value)}
+              className="w-32"
+            />
+            <Button type="submit">Login</Button>
+          </div>
         </div>
-      </div>
+      </form>
     )
   }
 
@@ -67,32 +77,25 @@ const LoginComponent = ({ isLoggedIn, tecnicoLogado, onLogin, onLogout }: LoginC
   )
 }
 
-// Dados iniciais estáticos
 const INITIAL_TECNICOS: Tecnico[] = [
   { id: 1, nome: 'Pedro', login: 'Pedro', senha: 'Connect123@', isMaster: true },
   { id: 2, nome: 'Felipe', login: 'Felipe', senha: 'Connect123@', isMaster: true },
 ]
 
 export default function PainelCompleto() {
-  // Estado básico
   const [currentTab, setCurrentTab] = useState('abastecimento')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isMasterLoggedIn, setIsMasterLoggedIn] = useState(false)
   const [alertMessage, setAlertMessage] = useState('')
   const [tecnicoLogado, setTecnicoLogado] = useState<Tecnico | null>(null)
 
-  // Estado do formulário
   const [novoModelo, setNovoModelo] = useState('')
   const [novoSerial, setNovoSerial] = useState('')
   const [novoFabricante, setNovoFabricante] = useState('')
   const [novoStatus, setNovoStatus] = useState('disponível')
 
-  // Estado das máquinas
-  const [maquinas, setMaquinas] = useState<any[]>([])
-  const [maquinasProducao, setMaquinasProducao] = useState<any[]>([])
-  const [maquinasFinalizadas, setMaquinasFinalizadas] = useState<any[]>([])
+  const [maquinas, setMaquinas] = useState<Maquina[]>([])
 
-  // Estado dos técnicos
   const [tecnicos] = useState(INITIAL_TECNICOS)
 
   const handleLogin = (login: string, senha: string) => {
@@ -112,7 +115,6 @@ export default function PainelCompleto() {
     setIsLoggedIn(false)
     setIsMasterLoggedIn(false)
     setAlertMessage('Logout realizado com sucesso.')
-    // Limpar estados do formulário
     setNovoModelo('')
     setNovoSerial('')
     setNovoFabricante('')
@@ -130,7 +132,7 @@ export default function PainelCompleto() {
       return
     }
 
-    const novaMaquina = {
+    const novaMaquina: Maquina = {
       id: String(Date.now()),
       modelo: novoModelo,
       serial: novoSerial,
@@ -155,7 +157,7 @@ export default function PainelCompleto() {
         onLogin={handleLogin}
         onLogout={handleLogout}
       />
-      
+
       {alertMessage && (
         <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
           <p>{alertMessage}</p>

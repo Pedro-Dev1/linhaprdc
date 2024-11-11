@@ -6,6 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+
+interface Maquina {
+  id: string;
+  modelo: string;
+  serial: string;
+  fabricante: string;
+  status: 'disponível' | 'em_uso' | 'manutenção';
+  dataCadastro: string;
+}
 
 interface Tecnico {
   id: number
@@ -13,15 +23,6 @@ interface Tecnico {
   login: string
   senha: string
   isMaster: boolean
-}
-
-interface Maquina {
-  id: string;
-  modelo: string;
-  serial: string;
-  fabricante: string;
-  status: string;
-  dataCadastro: string;
 }
 
 interface LoginComponentProps {
@@ -94,9 +95,12 @@ export default function PainelCompleto() {
   const [novoFabricante, setNovoFabricante] = useState('')
   const [novoStatus, setNovoStatus] = useState('disponível')
 
-  const [maquinas, setMaquinas] = useState<Maquina[]>([])
+  // Correção: Removida a variável 'maquinas' não utilizada
+  const [, setMaquinas] = useState<Maquina[]>([])
+  const [maquinasProducao, setMaquinasProducao] = useState<Maquina[]>([])
+  const [maquinasFinalizadas, setMaquinasFinalizadas] = useState<Maquina[]>([])
 
-  const [tecnicos] = useState(INITIAL_TECNICOS)
+  const tecnicos = INITIAL_TECNICOS
 
   const handleLogin = (login: string, senha: string) => {
     const tecnico = tecnicos.find(t => t.login === login && t.senha === senha)
@@ -137,7 +141,7 @@ export default function PainelCompleto() {
       modelo: novoModelo,
       serial: novoSerial,
       fabricante: novoFabricante,
-      status: novoStatus,
+      status: novoStatus as 'disponível' | 'em_uso' | 'manutenção',
       dataCadastro: new Date().toISOString(),
     }
 
@@ -147,6 +151,16 @@ export default function PainelCompleto() {
     setNovoFabricante('')
     setNovoStatus('disponível')
     setAlertMessage('Máquina adicionada com sucesso!')
+  }
+
+  const moverParaProducao = (maquina: Maquina) => {
+    setMaquinas(prev => prev.filter(m => m.id !== maquina.id))
+    setMaquinasProducao(prev => [...prev, { ...maquina, status: 'em_uso' }])
+  }
+
+  const finalizarProducao = (maquina: Maquina) => {
+    setMaquinasProducao(prev => prev.filter(m => m.id !== maquina.id))
+    setMaquinasFinalizadas(prev => [...prev, { ...maquina, status: 'disponível' }])
   }
 
   return (
@@ -223,7 +237,30 @@ export default function PainelCompleto() {
             </CardHeader>
             <CardContent>
               {isLoggedIn ? (
-                <p>Conteúdo da seção de produção</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Modelo</TableHead>
+                      <TableHead>Serial</TableHead>
+                      <TableHead>Fabricante</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ação</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {maquinasProducao.map((maquina) => (
+                      <TableRow key={maquina.id}>
+                        <TableCell>{maquina.modelo}</TableCell>
+                        <TableCell>{maquina.serial}</TableCell>
+                        <TableCell>{maquina.fabricante}</TableCell>
+                        <TableCell>{maquina.status}</TableCell>
+                        <TableCell>
+                          <Button onClick={() => finalizarProducao(maquina)}>Finalizar Produção</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               ) : (
                 <p>Você precisa estar logado para acessar esta seção.</p>
               )}
@@ -238,7 +275,26 @@ export default function PainelCompleto() {
             </CardHeader>
             <CardContent>
               {isLoggedIn ? (
-                <p>Conteúdo da seção de máquinas concluídas</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Modelo</TableHead>
+                      <TableHead>Serial</TableHead>
+                      <TableHead>Fabricante</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {maquinasFinalizadas.map((maquina) => (
+                      <TableRow key={maquina.id}>
+                        <TableCell>{maquina.modelo}</TableCell>
+                        <TableCell>{maquina.serial}</TableCell>
+                        <TableCell>{maquina.fabricante}</TableCell>
+                        <TableCell>{maquina.status}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               ) : (
                 <p>Você precisa estar logado para acessar esta seção.</p>
               )}

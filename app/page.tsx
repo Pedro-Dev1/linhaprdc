@@ -655,8 +655,7 @@ export default function PainelCompleto() {
                               <Checkbox
                                 id={`etapa-${maquina.id}-${index}`}
                                 checked={etapa.concluida}
-                                on
-CheckedChange={() => toggleEtapa(maquina.id, index)}
+                                onCheckedChange={() => toggleEtapa(maquina.id, index)}
                                 disabled={etapa.concluida}
                               />
                               <label
@@ -827,36 +826,6 @@ CheckedChange={() => toggleEtapa(maquina.id, index)}
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold mb-4">Gerar Relatório</h3>
-                    <div className="space-y-4">
-                      <Select value={tipoRelatorio} onValueChange={setTipoRelatorio}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tipo de Relatório" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="producao">Produção</SelectItem>
-                          <SelectItem value="maquinas">Máquinas</SelectItem>
-                          <SelectItem value="tecnicos">Técnicos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Input
-                          type="date"
-                          value={dataInicio}
-                          onChange={(e) => setDataInicio(e.target.value)}
-                        />
-                        <Input
-                          type="date"
-                          value={dataFim}
-                          onChange={(e) => setDataFim(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={gerarRelatorio}>
-                        <FileDown className="mr-2 h-4 w-4" /> Gerar Relatório
-                      </Button>
-                    </div>
                   </div>
                 </>
               ) : (

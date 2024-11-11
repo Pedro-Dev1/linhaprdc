@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,7 +32,6 @@ interface LoginComponentProps {
   onLogout: () => void
 }
 
-// Componente de Login separado
 const LoginComponent = ({ isLoggedIn, tecnicoLogado, onLogin, onLogout }: LoginComponentProps) => {
   const [loginTecnico, setLoginTecnico] = useState('')
   const [senhaTecnico, setSenhaTecnico] = useState('')
@@ -79,38 +78,29 @@ const LoginComponent = ({ isLoggedIn, tecnicoLogado, onLogin, onLogout }: LoginC
   )
 }
 
-// Dados iniciais estáticos
 const INITIAL_TECNICOS: Tecnico[] = [
   { id: 1, nome: 'Pedro', login: 'Pedro', senha: 'Connect123@', isMaster: true },
   { id: 2, nome: 'Felipe', login: 'Felipe', senha: 'Connect123@', isMaster: true },
 ]
 
 export default function PainelCompleto() {
-  // Estado básico
   const [currentTab, setCurrentTab] = useState('abastecimento')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isMasterLoggedIn, setIsMasterLoggedIn] = useState(false)
   const [alertMessage, setAlertMessage] = useState('')
   const [tecnicoLogado, setTecnicoLogado] = useState<Tecnico | null>(null)
 
-  // Estado do formulário
   const [novoModelo, setNovoModelo] = useState('')
   const [novoSerial, setNovoSerial] = useState('')
   const [novoFabricante, setNovoFabricante] = useState('')
   const [novoStatus, setNovoStatus] = useState('disponível')
 
-  // Estado das máquinas
-  const [maquinas, setMaquinas] = useState<Maquina[]>([])
+  // Correção: Removida a variável 'maquinas' não utilizada
+  const [, setMaquinas] = useState<Maquina[]>([])
   const [maquinasProducao, setMaquinasProducao] = useState<Maquina[]>([])
   const [maquinasFinalizadas, setMaquinasFinalizadas] = useState<Maquina[]>([])
 
-  // Estado dos técnicos
-  const tecnicos = INITIAL_TECNICOS; //Removed unnecessary state and destructuring
-
-  useEffect(() => {
-    // Aqui você pode adicionar qualquer lógica necessária que estava no useEffect anterior
-    // Por exemplo, carregar dados iniciais, configurar listeners, etc.
-  }, []);
+  const tecnicos = INITIAL_TECNICOS
 
   const handleLogin = (login: string, senha: string) => {
     const tecnico = tecnicos.find(t => t.login === login && t.senha === senha)
@@ -129,7 +119,6 @@ export default function PainelCompleto() {
     setIsLoggedIn(false)
     setIsMasterLoggedIn(false)
     setAlertMessage('Logout realizado com sucesso.')
-    // Limpar estados do formulário
     setNovoModelo('')
     setNovoSerial('')
     setNovoFabricante('')
@@ -165,13 +154,13 @@ export default function PainelCompleto() {
   }
 
   const moverParaProducao = (maquina: Maquina) => {
-    setMaquinas(prev => prev.filter(m => m.id !== maquina.id));
-    setMaquinasProducao(prev => [...prev, { ...maquina, status: 'em_uso' }]);
+    setMaquinas(prev => prev.filter(m => m.id !== maquina.id))
+    setMaquinasProducao(prev => [...prev, { ...maquina, status: 'em_uso' }])
   }
 
   const finalizarProducao = (maquina: Maquina) => {
-    setMaquinasProducao(prev => prev.filter(m => m.id !== maquina.id));
-    setMaquinasFinalizadas(prev => [...prev, { ...maquina, status: 'disponível' }]);
+    setMaquinasProducao(prev => prev.filter(m => m.id !== maquina.id))
+    setMaquinasFinalizadas(prev => [...prev, { ...maquina, status: 'disponível' }])
   }
 
   return (
@@ -244,10 +233,10 @@ export default function PainelCompleto() {
         <TabsContent value="producao">
           <Card>
             <CardHeader>
-              <CardTitle>Máquinas em Produção</CardTitle>
+              <CardTitle>Produção</CardTitle>
             </CardHeader>
             <CardContent>
-              {maquinasProducao.length > 0 ? (
+              {isLoggedIn ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -273,7 +262,7 @@ export default function PainelCompleto() {
                   </TableBody>
                 </Table>
               ) : (
-                <p>Não há máquinas em produção no momento.</p>
+                <p>Você precisa estar logado para acessar esta seção.</p>
               )}
             </CardContent>
           </Card>
@@ -285,7 +274,7 @@ export default function PainelCompleto() {
               <CardTitle>Máquinas Concluídas</CardTitle>
             </CardHeader>
             <CardContent>
-              {maquinasFinalizadas.length > 0 ? (
+              {isLoggedIn ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -307,7 +296,7 @@ export default function PainelCompleto() {
                   </TableBody>
                 </Table>
               ) : (
-                <p>Não há máquinas finalizadas no momento.</p>
+                <p>Você precisa estar logado para acessar esta seção.</p>
               )}
             </CardContent>
           </Card>
@@ -328,37 +317,6 @@ export default function PainelCompleto() {
           </Card>
         </TabsContent>
       </Tabs>
-      <Card>
-        <CardHeader>
-          <CardTitle>Máquinas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Modelo</TableHead>
-                <TableHead>Serial</TableHead>
-                <TableHead>Fabricante</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {maquinas.map((maquina) => (
-                <TableRow key={maquina.id}>
-                  <TableCell>{maquina.modelo}</TableCell>
-                  <TableCell>{maquina.serial}</TableCell>
-                  <TableCell>{maquina.fabricante}</TableCell>
-                  <TableCell>{maquina.status}</TableCell>
-                  <TableCell>
-                    <Button onClick={() => moverParaProducao(maquina)}>Mover para Produção</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   )
 }

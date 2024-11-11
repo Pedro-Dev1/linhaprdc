@@ -9,18 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
-import { FileDown, CheckCircle, Edit, Trash2, Plus } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { FileDown, CheckCircle, Edit, Trash2 } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
+// Novo componente de login
 const LoginComponent = ({ isLoggedIn, tecnicoLogado, loginHandler, logoutHandler }) => {
   const [loginTecnico, setLoginTecnico] = useState('')
   const [senhaTecnico, setSenhaTecnico] = useState('')
-
-  const handleLogin = () => {
-    loginHandler(loginTecnico, senhaTecnico)
-    setLoginTecnico('')
-    setSenhaTecnico('')
-  }
 
   return (
     <div className="mb-4 p-4 bg-gray-100 rounded-lg">
@@ -39,7 +34,7 @@ const LoginComponent = ({ isLoggedIn, tecnicoLogado, loginHandler, logoutHandler
             onChange={(e) => setSenhaTecnico(e.target.value)}
             className="w-32"
           />
-          <Button onClick={handleLogin}>Login</Button>
+          <Button onClick={() => loginHandler(loginTecnico, senhaTecnico)}>Login</Button>
         </div>
       ) : (
         <div className="flex items-center justify-between">
@@ -53,6 +48,9 @@ const LoginComponent = ({ isLoggedIn, tecnicoLogado, loginHandler, logoutHandler
 
 export default function PainelCompleto() {
   const [currentTab, setCurrentTab] = useState('abastecimento')
+  // Remova estas linhas
+  // const [loginMaster, setLoginMaster] = useState('admin')
+  // const [senhaMaster, setSenhaMaster] = useState('admin123')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isMasterLoggedIn, setIsMasterLoggedIn] = useState(false)
   const [alertMessage, setAlertMessage] = useState('')
@@ -95,7 +93,6 @@ export default function PainelCompleto() {
     try {
       return new Date(date).toLocaleString()
     } catch (e) {
-      console.error("Error formatting date:", e)
       return ''
     }
   }
@@ -142,215 +139,164 @@ export default function PainelCompleto() {
   };
 
   const adicionarMaquina = () => {
-    try {
-      if (!isLoggedIn) {
-        setAlertMessage('Você precisa estar logado para adicionar uma máquina.')
+    if (!isLoggedIn) {
+      setAlertMessage('Você precisa estar logado para adicionar uma máquina.')
+      return
+    }
+    if (novoModelo && novoSerial && novoFabricante) {
+      if (!/^\d+$/.test(novoSerial)) {
+        setAlertMessage('O número de série deve conter apenas números.')
         return
       }
-      if (novoModelo && novoSerial && novoFabricante) {
-        if (!/^\d+$/.test(novoSerial)) {
-          setAlertMessage('O número de série deve conter apenas números.')
-          return
-        }
-        const novaMaquina = {
-          id: Date.now(),
-          modelo: novoModelo,
-          serial: novoSerial,
-          fabricante: novoFabricante,
-          status: novoStatus,
-          dataCadastro: currentTime,
-          etapas: etapas.map(etapa => ({ nome: etapa, concluida: false })),
-          nomeCliente: '',
-          numeroBox: '',
-          patrimonio: '',
-        }
-        setMaquinas(prevMaquinas => [...prevMaquinas, novaMaquina])
-        setNovoModelo('')
-        setNovoSerial('')
-        setNovoFabricante('')
-        setNovoStatus('disponível')
-        setAlertMessage('Máquina adicionada com sucesso!')
-      } else {
-        setAlertMessage('Por favor, preencha todos os campos.')
+      const novaMaquina = {
+        id: Date.now(),
+        modelo: novoModelo,
+        serial: novoSerial,
+        fabricante: novoFabricante,
+        status: novoStatus,
+        dataCadastro: currentTime,
+        etapas: etapas.map(etapa => ({ nome: etapa, concluida: false })),
+        nomeCliente: '',
+        numeroBox: '',
+        patrimonio: '',
       }
-    } catch (error) {
-      console.error("Error adding machine:", error)
-      setAlertMessage('Erro ao adicionar máquina. Por favor, tente novamente.')
-    }
-  }
-
-  const moverParaProducao = (id) => {
-    try {
-      const maquina = maquinas.find(m => m.id === id)
-      if (maquina) {
-        setMaquinasProducao(prevMaquinas => [...prevMaquinas, { ...maquina, status: 'em_producao' }])
-        setMaquinas(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
-        setAlertMessage('Máquina movida para produção com sucesso!')
-      }
-    } catch (error) {
-      console.error("Error moving machine to production:", error)
-      setAlertMessage('Erro ao mover máquina para produção. Por favor, tente novamente.')
-    }
-  }
-
-  const toggleEtapa = (maquinaId, etapaIndex) => {
-    try {
-      if (!isLoggedIn) {
-        setAlertMessage('Por favor, faça login para realizar o check-in.')
-        return
-      }
-
-      const maquina = maquinasProducao.find(m => m.id === maquinaId)
-      if (!maquina.nomeCliente || !maquina.numeroBox || !maquina.patrimonio) {
-        setAlertMessage('Por favor, preencha o nome do cliente, número do box e patrimônio antes de realizar o check-in.')
-        return
-      }
-
-      setMaquinasProducao(prevMaquinas => prevMaquinas.map(maquina => {
-        if (maquina.id === maquinaId) {
-          const novasEtapas = [...maquina.etapas]
-          novasEtapas[etapaIndex] = {
-            ...novasEtapas[etapaIndex],
-            concluida: !novasEtapas[etapaIndex].concluida,
-            dataConcluidaEm: currentTime,
-            tecnicoResponsavel: tecnicoLogado.nome
-          }
-          return { ...maquina, etapas: novasEtapas }
-        }
-        return maquina
-      }))
-    } catch (error) {
-      console.error("Error toggling step:", error)
-      setAlertMessage('Erro ao atualizar etapa. Por favor, tente novamente.')
-    }
-  }
-
-  const concluirMaquina = (maquinaId) => {
-    try {
-      const maquina = maquinasProducao.find(m => m.id === maquinaId)
-      if (maquina && maquina.etapas.every(etapa => etapa.concluida)) {
-        setMaquinasFinalizadas(prev => [...prev, { ...maquina, status: 'finalizada', dataFinalizacao: currentTime }])
-        setMaquinasProducao(prev => prev.filter(m => m.id !== maquinaId))
-        setAlertMessage('Máquina concluída com sucesso!')
-      } else {
-        setAlertMessage('Todas as etapas devem ser concluídas antes de finalizar a máquina.')
-      }
-    } catch (error) {
-      console.error("Error concluding machine:", error)
-      setAlertMessage('Erro ao concluir máquina. Por favor, tente novamente.')
-    }
-  }
-
-  const loginHandler = (login, senha) => {
-    try {
-      const tecnico = tecnicos.find(t => t.login === login && t.senha === senha)
-      if (tecnico) {
-        setTecnicoLogado(tecnico)
-        setIsLoggedIn(true)
-        setIsMasterLoggedIn(tecnico.isMaster)
-        setAlertMessage(`Bem-vindo, ${tecnico.nome}!`)
-      } else {
-        setAlertMessage('Login ou senha incorretos.')
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      setAlertMessage('Erro ao fazer login. Por favor, tente novamente.')
-    }
-  }
-
-  const logoutHandler = () => {
-    try {
-      setTecnicoLogado(null)
-      setIsLoggedIn(false)
-      setIsMasterLoggedIn(false)
-      setAlertMessage('Logout realizado com sucesso.')
-      // Clear all relevant fields
+      setMaquinas(prevMaquinas => [...prevMaquinas, novaMaquina])
       setNovoModelo('')
       setNovoSerial('')
       setNovoFabricante('')
       setNovoStatus('disponível')
-      setFiltroProducao('')
-      setNovoTecnico({ nome: '', login: '', senha: '', isMaster: false })
-      setDataInicio('')
-      setDataFim('')
-      setTipoRelatorio('producao')
-      setTipoFiltroProducao('modelo')
-    } catch (error) {
-      console.error("Logout error:", error)
-      setAlertMessage('Erro ao fazer logout. Por favor, tente novamente.')
+      setAlertMessage('Máquina adicionada com sucesso!')
+    } else {
+      setAlertMessage('Por favor, preencha todos os campos.')
     }
   }
 
-  const adicionarTecnico = () => {
-    try {
-      if (!isMasterLoggedIn) {
-        setAlertMessage('Apenas usuários master podem adicionar novos técnicos.')
-        return
-      }
-
-      if (novoTecnico.nome && novoTecnico.login && novoTecnico.senha) {
-        setTecnicos(prevTecnicos => [...prevTecnicos, { ...novoTecnico, id: Date.now() }])
-        setNovoTecnico({ nome: '', login: '', senha: '', isMaster: false })
-        setAlertMessage('Técnico adicionado com sucesso!')
-      } else {
-        setAlertMessage('Por favor, preencha todos os campos do novo técnico.')
-      }
-    } catch (error) {
-      console.error("Error adding technician:", error)
-      setAlertMessage('Erro ao adicionar técnico. Por favor, tente novamente.')
+  const moverParaProducao = (id) => {
+    const maquina = maquinas.find(m => m.id === id)
+    if (maquina) {
+      setMaquinasProducao(prevMaquinas => [...prevMaquinas, { ...maquina, status: 'em_producao' }])
+      setMaquinas(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
+      setAlertMessage('Máquina movida para produção com sucesso!')
     }
   }
+
+  const toggleEtapa = (maquinaId, etapaIndex) => {
+    if (!isLoggedIn) {
+      setAlertMessage('Por favor, faça login para realizar o check-in.')
+      return
+    }
+
+    const maquina = maquinasProducao.find(m => m.id === maquinaId)
+    if (!maquina.nomeCliente || !maquina.numeroBox || !maquina.patrimonio) {
+      setAlertMessage('Por favor, preencha o nome do cliente, número do box e patrimônio antes de realizar o check-in.')
+      return
+    }
+
+    setMaquinasProducao(prevMaquinas => prevMaquinas.map(maquina => {
+      if (maquina.id === maquinaId) {
+        const novasEtapas = [...maquina.etapas]
+        novasEtapas[etapaIndex] = {
+          ...novasEtapas[etapaIndex],
+          concluida: !novasEtapas[etapaIndex].concluida,
+          dataConcluidaEm: currentTime,
+          tecnicoResponsavel: tecnicoLogado.nome
+        }
+        return { ...maquina, etapas: novasEtapas }
+      }
+      return maquina
+    }))
+  }
+
+  const concluirMaquina = (maquinaId) => {
+    const maquina = maquinasProducao.find(m => m.id === maquinaId)
+    if (maquina && maquina.etapas.every(etapa => etapa.concluida)) {
+      setMaquinasFinalizadas(prev => [...prev, { ...maquina, status: 'finalizada', dataFinalizacao: currentTime }])
+      setMaquinasProducao(prev => prev.filter(m => m.id !== maquinaId))
+      setAlertMessage('Máquina concluída com sucesso!')
+    } else {
+      setAlertMessage('Todas as etapas devem ser concluídas antes de finalizar a máquina.')
+    }
+  }
+
+  const loginHandler = (login, senha) => {
+    const tecnico = tecnicos.find(t => t.login === login && t.senha === senha)
+    if (tecnico) {
+      setTecnicoLogado(tecnico)
+      setIsLoggedIn(true)
+      setIsMasterLoggedIn(tecnico.isMaster)
+      setAlertMessage(`Bem-vindo, ${tecnico.nome}!`)
+    } else {
+      setAlertMessage('Login ou senha incorretos.')
+    }
+  }
+
+  const logoutHandler = () => {
+    setTecnicoLogado(null)
+    setIsLoggedIn(false)
+    setIsMasterLoggedIn(false)
+    setAlertMessage('Logout realizado com sucesso.')
+  }
+
+  // const adicionarTecnico = () => { //Comentado
+  //   if (!isMasterLoggedIn) {
+  //     setAlertMessage('Apenas usuários master podem adicionar novos técnicos.')
+  //     return
+  //   }
+
+  //   if (novoTecnico.nome && novoTecnico.login && novoTecnico.senha) {
+  //     setTecnicos(prevTecnicos => [...prevTecnicos, { ...novoTecnico, id: Date.now() }])
+  //     setNovoTecnico({ nome: '', login: '', senha: '', isMaster: false })
+  //     setAlertMessage('Técnico adicionado com sucesso!')
+  //   } else {
+  //     setAlertMessage('Por favor, preencha todos os campos do novo técnico.')
+  //   }
+  // }
 
   const gerarRelatorio = () => {
-    try {
-      if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
 
-      let relatorio = ''
-      const timestamp = new Date().toISOString().split('T')[0]
+    let relatorio = ''
+    const timestamp = new Date().toISOString().split('T')[0]
 
-      switch (tipoRelatorio) {
-        case 'producao':
-          relatorio = `Relatório de Produção (${dataInicio} a ${dataFim}):\n\n`
-          maquinasProducao.forEach(maquina => {
-            relatorio += `Modelo: ${maquina.modelo}\n`
-            relatorio += `Serial: ${maquina.serial}\n`
-            relatorio += `Status: ${maquina.status}\n`
-            relatorio += `Tempo de Preparação: ${calcularTempoPreparacao(maquina)}\n\n`
-          })
-          break
-        case 'maquinas':
-          relatorio = `Relatório de Máquinas (${dataInicio} a ${dataFim}):\n\n`
-          maquinasFinalizadas.forEach(maquina => {
-            relatorio += `Modelo: ${maquina.modelo}\n`
-            relatorio += `Serial: ${maquina.serial}\n`
-            relatorio += `Cliente: ${maquina.nomeCliente}\n`
-            relatorio += `Patrimônio: ${maquina.patrimonio}\n`
-            relatorio += `Tempo Total de Preparação: ${calcularTempoPreparacao(maquina)}\n\n`
-          })
-          break
-        case 'tecnicos':
-          relatorio = `Relatório de Técnicos (${dataInicio} a ${dataFim}):\n\n`
-          tecnicos.forEach(tecnico => {
-            relatorio += `Nome: ${tecnico.nome}\n`
-            relatorio += `Login: ${tecnico.login}\n`
-            relatorio += `Tipo: ${tecnico.isMaster ? 'Master' : 'Comum'}\n\n`
-          })
-          break
-      }
-
-      const blob = new Blob([relatorio], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `relatorio_${tipoRelatorio}_${timestamp}.txt`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error("Error generating report:", error)
-      setAlertMessage('Erro ao gerar relatório. Por favor, tente novamente.')
+    switch (tipoRelatorio) {
+      case 'producao':
+        relatorio = `Relatório de Produção (${dataInicio} a ${dataFim}):\n\n`
+        maquinasProducao.forEach(maquina => {
+          relatorio += `Modelo: ${maquina.modelo}\n`
+          relatorio += `Serial: ${maquina.serial}\n`
+          relatorio += `Status: ${maquina.status}\n`
+          relatorio += `Tempo de Preparação: ${calcularTempoPreparacao(maquina)}\n\n`
+        })
+        break
+      case 'maquinas':
+        relatorio = `Relatório de Máquinas (${dataInicio} a ${dataFim}):\n\n`
+        maquinasFinalizadas.forEach(maquina => {
+          relatorio += `Modelo: ${maquina.modelo}\n`
+          relatorio += `Serial: ${maquina.serial}\n`
+          relatorio += `Cliente: ${maquina.nomeCliente}\n`
+          relatorio += `Patrimônio: ${maquina.patrimonio}\n`
+          relatorio += `Tempo Total de Preparação: ${calcularTempoPreparacao(maquina)}\n\n`
+        })
+        break
+      case 'tecnicos':
+        relatorio = `Relatório de Técnicos (${dataInicio} a ${dataFim}):\n\n`
+        tecnicos.forEach(tecnico => {
+          relatorio += `Nome: ${tecnico.nome}\n`
+          relatorio += `Login: ${tecnico.login}\n`
+          relatorio += `Tipo: ${tecnico.isMaster ? 'Master' : 'Comum'}\n\n`
+        })
+        break
     }
+
+    const blob = new Blob([relatorio], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `relatorio_${tipoRelatorio}_${timestamp}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
   }
 
   const calcularTempoPreparacao = (maquina) => {
@@ -369,66 +315,43 @@ export default function PainelCompleto() {
 
       return `${horas}h ${minutos}m ${segundos}s`
     } catch (e) {
-      console.error("Error calculating preparation time:", e)
       return 'N/A'
     }
   }
 
-  const deleteMachine = (id, type) => {
-    try {
-      if (!isMasterLoggedIn) {
-        setAlertMessage('Apenas usuários master podem excluir máquinas.')
-        return
-      }
-      if (type === 'finalizada') {
-        setMaquinasFinalizadas(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
-      } else {
-        setMaquinas(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
-        setMaquinasProducao(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
-      }
-      setAlertMessage('Máquina excluída com sucesso!')
-    } catch (error) {
-      console.error("Error deleting machine:", error)
-      setAlertMessage('Erro ao excluir máquina. Por favor, tente novamente.')
+  const deleteMachine = (id) => {
+    if (!isMasterLoggedIn) {
+      setAlertMessage('Apenas usuários master podem excluir máquinas.')
+      return
     }
+    setMaquinas(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
+    setMaquinasProducao(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
+    setMaquinasFinalizadas(prevMaquinas => prevMaquinas.filter(m => m.id !== id))
+    setAlertMessage('Máquina excluída com sucesso!')
   }
 
-  const openEditDialog = (machine, type) => {
-    try {
-      if (!isMasterLoggedIn) {
-        setAlertMessage('Apenas usuários master podem editar máquinas.')
-        return
-      }
-      setEditingMachine({ ...machine, type })
-      setIsEditDialogOpen(true)
-    } catch (error) {
-      console.error("Error opening edit dialog:", error)
-      setAlertMessage('Erro ao abrir diálogo de edição. Por favor, tente novamente.')
+  const openEditDialog = (machine) => {
+    if (!isMasterLoggedIn) {
+      setAlertMessage('Apenas usuários master podem editar máquinas.')
+      return
     }
+    setEditingMachine(machine)
+    setIsEditDialogOpen(true)
   }
 
   const saveEditedMachine = () => {
-    try {
-      if (!editingMachine) return
+    if (!editingMachine) return
 
-      const updateMachine = (prevMachines) =>
-        prevMachines.map(m => m.id === editingMachine.id ? { ...editingMachine, type: undefined } : m)
+    const updateMachine = (prevMachines) =>
+      prevMachines.map(m => m.id === editingMachine.id ? editingMachine : m)
 
-      if (editingMachine.type === 'finalizada') {
-        setMaquinasFinalizadas(updateMachine)
-      } else if (editingMachine.status === 'em_producao') {
-        setMaquinasProducao(updateMachine)
-      } else {
-        setMaquinas(updateMachine)
-      }
+    setMaquinas(updateMachine)
+    setMaquinasProducao(updateMachine)
+    setMaquinasFinalizadas(updateMachine)
 
-      setIsEditDialogOpen(false)
-      setEditingMachine(null)
-      setAlertMessage('Máquina atualizada com sucesso!')
-    } catch (error) {
-      console.error("Error saving edited machine:", error)
-      setAlertMessage('Erro ao salvar alterações da máquina. Por favor, tente novamente.')
-    }
+    setIsEditDialogOpen(false)
+    setEditingMachine(null)
+    setAlertMessage('Máquina atualizada com sucesso!')
   }
 
   return (
@@ -655,8 +578,7 @@ export default function PainelCompleto() {
                               <Checkbox
                                 id={`etapa-${maquina.id}-${index}`}
                                 checked={etapa.concluida}
-                                on
-CheckedChange={() => toggleEtapa(maquina.id, index)}
+                                onCheckedChange={() => toggleEtapa(maquina.id, index)}
                                 disabled={etapa.concluida}
                               />
                               <label
@@ -740,16 +662,6 @@ CheckedChange={() => toggleEtapa(maquina.id, index)}
                               </li>
                             ))}
                           </ul>
-                          {isMasterLoggedIn && (
-                            <div className="mt-4 flex space-x-2">
-                              <Button onClick={() => openEditDialog(maquina, 'finalizada')} variant="outline" size="sm">
-                                <Edit className="mr-2 h-4 w-4" /> Editar
-                              </Button>
-                              <Button onClick={() => deleteMachine(maquina.id, 'finalizada')} variant="outline" size="sm">
-                                <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                              </Button>
-                            </div>
-                          )}
                         </CardContent>
                       </Card>
                     ))
@@ -771,63 +683,6 @@ CheckedChange={() => toggleEtapa(maquina.id, index)}
             <CardContent>
               {isMasterLoggedIn ? (
                 <>
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Adicionar Novo Técnico</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <Input
-                        placeholder="Nome do Técnico"
-                        value={novoTecnico.nome}
-                        onChange={(e) => setNovoTecnico({...novoTecnico, nome: e.target.value})}
-                      />
-                      <Input
-                        placeholder="Login"
-                        value={novoTecnico.login}
-                        onChange={(e) => setNovoTecnico({...novoTecnico, login: e.target.value})}
-                      />
-                      <Input
-                        type="password"
-                        placeholder="Senha"
-                        value={novoTecnico.senha}
-                        onChange={(e) => setNovoTecnico({...novoTecnico, senha: e.target.value})}
-                      />
-                      <Select
-                        value={novoTecnico.isMaster ? "master" : "comum"}
-                        onValueChange={(value) => setNovoTecnico({...novoTecnico, isMaster: value === "master"})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tipo de Usuário" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="comum">Comum</SelectItem>
-                          <SelectItem value="master">Master</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button onClick={adicionarTecnico}>
-                      <Plus className="mr-2 h-4 w-4" /> Adicionar Técnico
-                    </Button>
-                  </div>
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold mb-4">Técnicos Cadastrados</h3>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Login</TableHead>
-                          <TableHead>Tipo</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tecnicos.map((tecnico) => (
-                          <TableRow key={tecnico.id}>
-                            <TableCell>{tecnico.nome}</TableCell>
-                            <TableCell>{tecnico.login}</TableCell>
-                            <TableCell>{tecnico.isMaster ? 'Master' : 'Comum'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-4">Gerar Relatório</h3>
                     <div className="space-y-4">
@@ -921,14 +776,13 @@ CheckedChange={() => toggleEtapa(maquina.id, index)}
                   <SelectItem value="disponível">Disponível</SelectItem>
                   <SelectItem value="em_uso">Em Uso</SelectItem>
                   <SelectItem value="manutenção">Manutenção</SelectItem>
-                  <SelectItem value="finalizada">Finalizada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end">
             <Button onClick={saveEditedMachine}>Salvar Alterações</Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

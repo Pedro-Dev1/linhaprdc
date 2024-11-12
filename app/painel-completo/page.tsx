@@ -43,6 +43,7 @@ interface Maquina {
   numeroBox: string
   patrimonio: string
   dataFinalizacao?: string
+  editType?: string
 }
 
 interface LoginComponentProps {
@@ -269,7 +270,7 @@ export default function PainelCompleto() {
             etapa.tecnicoResponsavel = tecnicoLogado?.nome
             etapa.tempoInicio = now
             etapa.tempoGasto = 0
-          } else if (!etapa.dataConcluidaEm) {
+          } else {
             // Finalizando a etapa
             etapa.dataConcluidaEm = new Date().toISOString()
             etapa.tempoGasto = now - (etapa.tempoInicio || now)
@@ -346,7 +347,7 @@ export default function PainelCompleto() {
         setAlertMessage('Apenas usuários master podem editar máquinas.')
         return
       }
-      setEditingMachine({ ...machine, type })
+      setEditingMachine({ ...machine, editType: type })
       setIsEditDialogOpen(true)
     } catch (error) {
       console.error("Erro ao abrir diálogo de edição:", error)
@@ -359,9 +360,9 @@ export default function PainelCompleto() {
       if (!editingMachine) return
 
       const updateMachine = (prevMachines: Maquina[]) =>
-        prevMachines.map(m => m.id === editingMachine.id ? { ...editingMachine, type: undefined } : m)
+        prevMachines.map(m => m.id === editingMachine.id ? { ...editingMachine, editType: undefined } : m)
 
-      if (editingMachine.type === 'finalizada') {
+      if (editingMachine.editType === 'finalizada') {
         setMaquinasFinalizadas(updateMachine)
       } else if (editingMachine.status === 'em_producao') {
         setMaquinasProducao(updateMachine)
@@ -723,19 +724,24 @@ export default function PainelCompleto() {
                                 id={`etapa-${maquina.id}-${index}`}
                                 checked={etapa.concluida}
                                 onCheckedChange={() => toggleEtapa(maquina.id, index)}
-                                disabled={etapa.dataConcluidaEm !== undefined}
                               />
                               <label
                                 htmlFor={`etapa-${maquina.id}-${index}`}
                                 className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
-                                  etapa.concluida ? 'line-through' : ''
+                                  etapa.concluida && etapa.dataConcluidaEm ? 'line-through' : ''
                                 }`}
                               >
                                 {etapa.nome}
                                 {etapa.concluida && (
                                   <>
                                     {' '}(Técnico: {etapa.tecnicoResponsavel})
-                                    {' '}| Tempo: {formatTime(etapa.tempoGasto || 0)}
+                                    {' '}| Início: {formatDateTime(etapa.dataInicio || '')}
+                                    {etapa.dataConcluidaEm && (
+                                      <>
+                                        {' '}| Conclusão: {formatDateTime(etapa.dataConcluidaEm)}
+                                        {' '}| Tempo: {formatTime(etapa.tempoGasto || 0)}
+                                      </>
+                                    )}
                                   </>
                                 )}
                               </label>

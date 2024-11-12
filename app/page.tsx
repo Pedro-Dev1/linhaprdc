@@ -43,6 +43,7 @@ interface Maquina {
   numeroBox: string
   patrimonio: string
   dataFinalizacao?: string
+  editType?: string  // Make sure this property exists
 }
 
 interface LoginComponentProps {
